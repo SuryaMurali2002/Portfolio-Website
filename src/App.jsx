@@ -369,11 +369,20 @@ export default function App() {
       <Section id="about" title="About Me" accent="var(--accent-1)">
         <div className="grid md:grid-cols-3 gap-6">
           <div className="md:col-span-1 aspect-square" data-reveal>
-            <img
-              src="/profile.png"
-              alt="Surya Murali"
-              className="rounded-2xl border object-cover w-full h-full shadow-sm ring-1 ring-black/5"
-            />
+            <picture>
+              <source srcSet="/profile.avif" type="image/avif" />
+              <source srcSet="/profile.webp" type="image/webp" />
+              <img
+                src="/profile.png"
+                alt="Surya Murali"
+                loading="lazy"
+                decoding="async"
+                fetchpriority="low"
+                width="640"
+                height="640"
+                className="rounded-2xl border object-cover w-full h-full shadow-sm ring-1 ring-black/5"
+              />
+            </picture>
           </div>
           <div className="md:col-span-2 space-y-4 text-[var(--fg)] leading-7" data-reveal>
             <p>Hi, I’m Surya 👋🏽 I was born and raised in New Delhi, India, in a Tamil family, and now I live in Vancouver, Canada while studying Computer Science at SFU.</p>
