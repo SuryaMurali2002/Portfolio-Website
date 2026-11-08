@@ -1,120 +1,25 @@
-import { useEffect, useMemo, useRef, useState } from "react";
-
-// --- Data: Projects / Experience / Skills ---
-
-const PROJECTS = [
-  {
-    title: "HealthGPT (RAG)",
-    blurb:
-      "Healthcare Q&A using retrieval-augmented generation with MiniLM embeddings and safety rails.",
-    tags: ["Python", "RAG", "Transformers", "Mistral-7B"],
-    links: { code: "https://github.com/SuryaMurali2002/HealthGPT" },
-  },
-  {
-    title: "Hybrid Recommender (MovieLens)",
-    blurb:
-      "Hybrid system combining TF-IDF with collaborative filtering, validated with Pearson correlation.",
-    tags: ["Python", "TF-IDF", "scikit-learn"],
-    links: { code: "https://github.com/SuryaMurali2002/Hybrid-Recommender-System" },
-  },
-  {
-    title: "Cycle Shop Sales Analysis",
-    blurb:
-      "SQL + BI exploration of sales, riders, and revenue to surface KPIs and seasonal performance.",
-    tags: ["SQL", "Power BI"],
-    links: {},
-  },
-  {
-    title: "Clash of Typers (Multiplayer Typing Game)",
-    blurb:
-      "TCP sockets with JSON protocols, concurrency control, and real-time WPM scoring for 4+ players.",
-    tags: ["Python", "Sockets", "Pygame"],
-    links: { code: "https://github.com/SuryaMurali2002/ClashOfTypers" },
-  },
-  {
-    title: "Mom's Home (2D Adventure Game)",
-    blurb:
-      "Java game with AI pathfinding, collision detection, modular design, and JUnit/Jacoco testing.",
-    tags: ["Java", "Swing/AWT", "JUnit"],
-    links: {},
-  },
-];
-
-const EXPERIENCE = [
-  {
-    role: "Associate VP, External and Community Affairs",
-    org: "SFSS",
-    time: "May 2025 – Present",
-    bullets: [
-      "Led advocacy campaigns on affordability, including proposals to expand OER by researching successful smaller-scale models like Kwantlen Polytechnic.",
-      "Worked with student leaders across BC on joint actions, contributing to the Open Letter to BC Ferries for reduced student fares across SFU, UBC, and UVic.",
-      "Collaborated on housing projects, supporting long-term solutions for students living off-campus.",
-    ],
-  },
-  {
-    role: "Undergraduate Senator",
-    org: "SFU Senate",
-    time: "May 2025 – Present",
-    bullets: [
-      "Shaped policy discussions around SFU’s new medical school, focusing on fair admissions and international student access.",
-      "Held administrators accountable by raising student-focused questions on clarity and transparency in decision-making.",
-      "Advocated for bursaries and accessibility programs, especially for part-time and international students.",
-    ],
-  },
-  {
-    role: "National Communications Coordinator",
-    org: "RHA",
-    time: "May 2025 – Present",
-    bullets: [
-      "Built partnerships with UBC’s RHA to foster joint programming and collaboration.",
-      "Coordinated with PACURH schools (UC San Diego, UC Riverside, and others) to exchange best practices in residence life.",
-      "Led communications and delegation preparation for SFU at major conferences (PACURH/NACURH).",
-    ],
-  },
-  {
-    role: "Food Security Volunteer",
-    org: "SFSS Breakfast Program",
-    time: "2024 – Present",
-    bullets: [
-      "Distributed meals and engaged directly with students facing affordability challenges.",
-      "Created a welcoming environment that supports community and belonging on campus.",
-    ],
-  },
-  {
-    role: "Events & Student Affairs Committee Member",
-    org: "SFSS",
-    time: "2025 – Present",
-    bullets: [
-      "Planned inclusive campus events that reflect the diversity of SFU students.",
-      "Collaborated across student groups to boost engagement and participation.",
-    ],
-  },
-  {
-    role: "Member, Senate Committee on University Priorities",
-    org: "SFU",
-    time: "2025 – Present",
-    bullets: [
-      "Advised on academic planning and budget allocation to align resources with student needs.",
-      "Participated in discussions on institutional strategy, balancing teaching, research, and support priorities.",
-    ],
-  },
-];
-
-const SKILLS = [
-  "Python","Pandas","PyTorch","scikit-learn","NLP","RAG",
-  "React","Node.js","Tailwind","SQL","Docker","AWS",
-];
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import {
+  EMAIL, SFU_EMAIL, LINKEDIN, GITHUB, ROLES, NOW, STATS,
+  WORK, RESEARCH, PROJECTS, MORE_PROJECTS, LEADERSHIP, SKILLS,
+} from "./data.js";
+import { useKonami, useSpotlight, prefersReducedMotion } from "./hooks.js";
+import {
+  CodeRain, CommandPalette, CountUp, RecallBars, RotatingRoles,
+  ScrollProgress, SectionHeading, Toast,
+} from "./effects.jsx";
 
 // --- UI helpers ---
 function Container({ children }) {
   return <div className="max-w-5xl mx-auto px-4 md:px-6">{children}</div>;
 }
-function Section({ id, title, children, accent }) {
+
+function Section({ id, index, title, accent, children }) {
   return (
-    <section id={id} data-accent={accent} className="scroll-mt-24 py-16 md:py-24 will-change-transform">
+    <section id={id} data-accent={accent} className="scroll-mt-24 py-16 md:py-24">
       <Container>
-        <h2 className="text-2xl md:text-3xl font-semibold tracking-tight">{title}</h2>
-        <div className="mt-6">{children}</div>
+        <SectionHeading index={index} title={title} />
+        <div className="mt-8">{children}</div>
       </Container>
     </section>
   );
@@ -122,8 +27,7 @@ function Section({ id, title, children, accent }) {
 
 function Button({ variant = "primary", className = "", ...props }) {
   const base =
-    "inline-flex items-center justify-center rounded-xl text-sm font-medium " +
-    // slower + smoother + GPU
+    "inline-flex items-center justify-center rounded-xl text-sm font-medium cursor-pointer " +
     "transition-transform transition-colors transition-shadow duration-[900ms] ease-[cubic-bezier(.22,.61,.36,1)] transform-gpu translate-y-0 " +
     "motion-reduce:transform-none motion-reduce:transition-none " +
     "focus:outline-none focus-visible:ring-2 focus-visible:ring-[var(--accent)]/30";
@@ -135,42 +39,131 @@ function Button({ variant = "primary", className = "", ...props }) {
     outline:
       "border px-4 py-2 shadow-sm bg-[var(--surface)] text-[var(--fg)] border-[var(--border)] " +
       "hover:bg-[var(--surface-hover)] hover:-translate-y-[2px] hover:shadow-md active:scale-[.98] active:translate-y-[1px]",
-    link:
-      "underline underline-offset-4 " +
-      "hover:opacity-80 hover:-translate-y-[2px]",
+    link: "underline underline-offset-4 hover:text-[var(--accent)] hover:-translate-y-[2px]",
   };
 
-  return <a className={`${base} ${variants[variant]} ${className}`} {...props} />;
+  const Tag = props.href ? "a" : "button";
+  return <Tag className={`${base} ${variants[variant]} ${className}`} {...(Tag === "button" ? { type: "button" } : {})} {...props} />;
 }
+
+const CARD =
+  "spotlight relative rounded-2xl border bg-[var(--surface)] text-[var(--fg)] border-[var(--border)] " +
+  "hover:shadow-md translate-y-0 hover:-translate-y-0.5 " +
+  "transition-transform transition-shadow transition-colors duration-[900ms] ease-[cubic-bezier(.22,.61,.36,1)] transform-gpu " +
+  "motion-reduce:transform-none motion-reduce:transition-none " +
+  "ring-1 ring-transparent hover:ring-[var(--accent)]/20";
+
+function Tags({ items }) {
+  return (
+    <div className="mt-4 flex flex-wrap gap-2">
+      {items.map((t) => (
+        <span key={t} className="px-2 py-1 text-xs rounded-full border bg-[var(--surface)] border-[var(--border)] font-mono">
+          {t}
+        </span>
+      ))}
+    </div>
+  );
+}
+
+const SECTIONS = [
+  { id: "about", label: "About", accent: "var(--accent-1)" },
+  { id: "experience", label: "Experience", accent: "var(--accent-2)" },
+  { id: "research", label: "Research", accent: "var(--accent-1)" },
+  { id: "projects", label: "Projects", accent: "var(--accent-2)" },
+  { id: "leadership", label: "Leadership", accent: "var(--accent-1)" },
+  { id: "skills", label: "Skills", accent: "var(--accent-2)" },
+  { id: "contact", label: "Contact", accent: "var(--accent-1)" },
+];
 
 // --- App ---
 export default function App() {
-  const EMAIL = "suryamurali2002@gmail.com";
-  const LINKEDIN = "https://www.linkedin.com/in/surya-murali-5a32b9310/";
-
   const [open, setOpen] = useState(false);
+  const [paletteOpen, setPaletteOpen] = useState(false);
   const [active, setActive] = useState("home");
-  const [theme, setTheme] = useState(() =>
-    localStorage.getItem("theme") || (window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches ? "dark" : "light")
-  );
+  const [rainMode, setRainMode] = useState(false);
+  const [toast, setToast] = useState("");
+  const toastTimer = useRef(0);
+  const [theme, setTheme] = useState(() => {
+    try {
+      const saved = localStorage.getItem("theme");
+      if (saved) return saved;
+    } catch { /* storage blocked */ }
+    return window.matchMedia?.("(prefers-color-scheme: dark)").matches ? "dark" : "light";
+  });
 
-  const canvasRef = useRef(null);
-  const rafRef = useRef(0);
+  const isMac = typeof navigator !== "undefined" && /Mac|iPhone|iPad/.test(navigator.platform);
 
-  const accents = useMemo(
-    () => ({
-      home: "var(--accent-1)",
-      about: "var(--accent-1)",
-      projects: "var(--accent-1)",
-      experience: "var(--accent-2)",
-      skills: "var(--accent-1)",
-      contact: "var(--accent-2)",
-    }),
-    []
+  const showToast = useCallback((msg) => {
+    setToast(msg);
+    clearTimeout(toastTimer.current);
+    toastTimer.current = setTimeout(() => setToast(""), 2600);
+  }, []);
+
+  const toggleTheme = useCallback(() => setTheme((t) => (t === "dark" ? "light" : "dark")), []);
+  const toggleRain = useCallback(() => {
+    if (prefersReducedMotion()) {
+      showToast("Code rain is off because your system prefers reduced motion.");
+      return;
+    }
+    showToast(rainMode ? "rain.stop()" : "rain.start({ mode: 'downpour' })");
+    setRainMode(!rainMode);
+  }, [rainMode, showToast]);
+
+  const copyEmail = useCallback(async () => {
+    try {
+      await navigator.clipboard.writeText(EMAIL);
+      showToast(`Copied ${EMAIL}`);
+    } catch {
+      window.location.href = `mailto:${EMAIL}`;
+    }
+  }, [showToast]);
+
+  useKonami(toggleRain);
+  useSpotlight();
+
+  // Hello, fellow dev-tools opener.
+  useEffect(() => {
+    console.log(
+      "%c> hi, I'm Surya.%c\nPress Ctrl/⌘+K for the command palette, or try the Konami code. ↑↑↓↓←→←→BA",
+      "font: 600 14px ui-monospace, monospace; color: #6aa9f0",
+      "font: 12px ui-monospace, monospace"
+    );
+  }, []);
+
+  // Command palette shortcut
+  useEffect(() => {
+    const onKey = (e) => {
+      const typing = /INPUT|TEXTAREA/.test(document.activeElement?.tagName || "");
+      if ((e.key === "k" || e.key === "K") && (e.metaKey || e.ctrlKey)) {
+        e.preventDefault();
+        setPaletteOpen((v) => !v);
+      } else if (e.key === "/" && !typing) {
+        e.preventDefault();
+        setPaletteOpen(true);
+      }
+    };
+    window.addEventListener("keydown", onKey);
+    return () => window.removeEventListener("keydown", onKey);
+  }, []);
+
+  const go = (id) => document.getElementById(id)?.scrollIntoView({ behavior: prefersReducedMotion() ? "auto" : "smooth" });
+
+  const commands = useMemo(
+    () => [
+      { label: "Home", group: "Go to", action: () => go("home") },
+      ...SECTIONS.map((s) => ({ label: s.label, group: "Go to", action: () => go(s.id) })),
+      { label: "Toggle dark / light theme", group: "Action", keywords: "mode", action: toggleTheme },
+      { label: "Toggle code rain", group: "Easter egg", keywords: "matrix rain konami", action: toggleRain },
+      { label: "Copy email address", group: "Action", keywords: "contact mail", action: copyEmail },
+      { label: "Open GitHub", group: "Link", action: () => window.open(GITHUB, "_blank", "noopener") },
+      { label: "Open LinkedIn", group: "Link", action: () => window.open(LINKEDIN, "_blank", "noopener") },
+    ],
+    [toggleTheme, toggleRain, copyEmail]
   );
 
   // Update active section + --accent based on scroll
   useEffect(() => {
+    const accentFor = Object.fromEntries(SECTIONS.map((s) => [s.id, s.accent]));
     const sections = Array.from(document.querySelectorAll("section[id]"));
     const obs = new IntersectionObserver(
       (entries) => {
@@ -178,8 +171,7 @@ export default function App() {
           if (e.isIntersecting) {
             const id = e.target.id;
             setActive(id);
-            const token = accents[id] || "var(--accent-1)";
-            document.documentElement.style.setProperty("--accent", token);
+            document.documentElement.style.setProperty("--accent", accentFor[id] || "var(--accent-1)");
           }
         });
       },
@@ -187,128 +179,104 @@ export default function App() {
     );
     sections.forEach((s) => obs.observe(s));
     return () => obs.disconnect();
-  }, [accents]);
+  }, []);
 
-  // One-time reveal animation for items with [data-reveal]
+  // Staggered reveal for items with [data-reveal]
   useEffect(() => {
     const els = document.querySelectorAll("[data-reveal]");
     const io = new IntersectionObserver(
       (ents) => {
         ents.forEach((ent) => {
           if (ent.isIntersecting) {
-            ent.target.classList.add("opacity-100", "translate-y-0");
+            ent.target.classList.add("revealed");
             io.unobserve(ent.target);
           }
         });
       },
-      { threshold: 0.1 }
+      { threshold: 0.1, rootMargin: "0px 0px -5% 0px" }
     );
     els.forEach((el) => io.observe(el));
     return () => io.disconnect();
   }, []);
 
+  // Timeline line grows as you scroll through Experience + Research
+  const timelineRef = useRef(null);
+  useEffect(() => {
+    let raf = 0;
+    const update = () => {
+      raf = 0;
+      const el = timelineRef.current;
+      if (!el) return;
+      const r = el.getBoundingClientRect();
+      const p = Math.min(1, Math.max(0, (window.innerHeight * 0.6 - r.top) / r.height));
+      el.style.setProperty("--progress", p);
+    };
+    const onScroll = () => { if (!raf) raf = requestAnimationFrame(update); };
+    update();
+    window.addEventListener("scroll", onScroll, { passive: true });
+    return () => { window.removeEventListener("scroll", onScroll); cancelAnimationFrame(raf); };
+  }, []);
+
   // Apply theme attr and persist
   useEffect(() => {
     document.documentElement.setAttribute("data-theme", theme);
-    localStorage.setItem("theme", theme);
+    try { localStorage.setItem("theme", theme); } catch { /* storage blocked */ }
   }, [theme]);
 
-  // Dark mode code-rain background
-  useEffect(() => {
-    if (theme !== "dark") {
-      if (rafRef.current) cancelAnimationFrame(rafRef.current);
-      return;
-    }
-    const canvas = canvasRef.current;
-    if (!canvas) return;
-    const ctx = canvas.getContext("2d");
-
-    const onResize = () => {
-      canvas.width = window.innerWidth;
-      canvas.height = window.innerHeight;
-    };
-    onResize();
-    window.addEventListener("resize", onResize);
-
-    const glyphs = "01{}[]()<>=+-*/&|^%$#@".split("");
-    const columnWidth = 16;
-    const fontSize = 14;
-
-    const initDrops = () => {
-      const columns = Math.ceil(canvas.width / columnWidth);
-      return Array.from({ length: columns }, () => Math.floor(Math.random() * (canvas.height / fontSize)));
-    };
-    let drops = initDrops();
-
-    const draw = () => {
-      ctx.fillStyle = "rgba(0,0,0,0.08)";
-      ctx.fillRect(0, 0, canvas.width, canvas.height);
-      ctx.font = `${fontSize}px ui-monospace, SFMono-Regular, Menlo, Consolas, monospace`;
-      ctx.fillStyle = "rgba(150, 200, 255, 0.9)";
-      for (let i = 0; i < drops.length; i++) {
-        const text = glyphs[(Math.random() * glyphs.length) | 0];
-        const x = i * columnWidth;
-        const y = drops[i] * fontSize;
-        ctx.fillText(text, x, y);
-        if (y > canvas.height && Math.random() > 0.975) drops[i] = 0; else drops[i]++;
-      }
-      rafRef.current = requestAnimationFrame(draw);
-    };
-    draw();
-
-    const resetDrops = () => {
-      drops = initDrops();
-    };
-    window.addEventListener("resize", resetDrops);
-
-    return () => {
-      window.removeEventListener("resize", onResize);
-      window.removeEventListener("resize", resetDrops);
-      if (rafRef.current) cancelAnimationFrame(rafRef.current);
-    };
-  }, [theme]);
-
-  const NavLink = ({ href, id, children }) => (
-    <a
-      href={href}
-      className={`relative py-1 transition ${
-        active === id ? "text-[var(--accent)]" : "hover:text-[var(--accent)]"
-      }`}
-    >
+  const NavLink = ({ id, children }) => (
+    <a href={`#${id}`} className={`relative py-1 transition ${active === id ? "text-[var(--accent)]" : "hover:text-[var(--accent)]"}`}>
       <span className="relative z-10">{children}</span>
       <span
-        className={`absolute inset-x-0 -bottom-1 h-[2px] rounded-full
-                    transition-all duration-[900ms] ease-[cubic-bezier(.22,.61,.36,1)]
-                    ${active === id ? "bg-[var(--accent)] opacity-100" : "opacity-0 group-hover:opacity-100"}`}
+        className={`absolute inset-x-0 -bottom-1 h-[2px] rounded-full transition-all duration-[900ms] ease-[cubic-bezier(.22,.61,.36,1)]
+                    ${active === id ? "bg-[var(--accent)] opacity-100" : "opacity-0"}`}
       />
     </a>
   );
+
+  const showRain = theme === "dark" || rainMode;
 
   return (
     <div className="min-h-screen">
       <div aria-hidden className="gradient-bg" />
       <div aria-hidden className="grain-bg" />
-      {theme === "dark" && <canvas ref={canvasRef} className="code-rain" />}
+      {showRain && <CodeRain intense={rainMode} />}
+      <ScrollProgress />
 
       {/* Header */}
       <header className="sticky top-0 z-50 border-b bg-[var(--navbar)]/80 backdrop-blur supports-[backdrop-filter]:bg-[var(--navbar)]/60 border-[var(--border)]">
         <Container>
           <div className="h-14 flex items-center justify-between">
-            <a href="#home" className="font-semibold">Surya Murali</a>
+            <a href="#home" className="font-semibold font-mono">
+              <span className="text-[var(--accent)]">~/</span>surya
+            </a>
 
-            <nav className="hidden md:flex items-center gap-6 text-sm group">
-              <NavLink href="#about" id="about">About</NavLink>
-              <NavLink href="#projects" id="projects">Projects</NavLink>
-              <NavLink href="#experience" id="experience">Experience</NavLink>
-              <NavLink href="#skills" id="skills">Skills</NavLink>
-              <NavLink href="#contact" id="contact">Contact</NavLink>
-              <a href="#home" className="underline hover:text-[var(--accent)]">Top</a>
+            <nav className="hidden md:flex items-center gap-5 text-sm">
+              {SECTIONS.map((s) => <NavLink key={s.id} id={s.id}>{s.label}</NavLink>)}
             </nav>
 
             <div className="flex items-center gap-2">
               <button
-                className="md:hidden inline-flex h-9 w-9 items-center justify-center rounded-lg border"
+                className="hidden md:inline-flex h-9 px-2.5 items-center gap-1.5 justify-center rounded-lg border border-[var(--border)] text-xs font-mono text-[color:var(--muted)] hover:bg-[var(--surface-hover)] hover:text-[var(--fg)]"
+                aria-label="Open command palette"
+                onClick={() => setPaletteOpen(true)}
+              >
+                <kbd className="kbd">{isMac ? "⌘" : "Ctrl"}</kbd><kbd className="kbd">K</kbd>
+              </button>
+              <button
+                className="inline-flex h-9 w-9 items-center justify-center rounded-lg border border-[var(--border)] hover:bg-[var(--surface-hover)]"
+                aria-label={theme === "dark" ? "Switch to light theme" : "Switch to dark theme"}
+                onClick={toggleTheme}
+              >
+                {theme === "dark" ? (
+                  <svg viewBox="0 0 24 24" className="h-4 w-4" fill="none" stroke="currentColor" strokeWidth="2"><circle cx="12" cy="12" r="4" /><path d="M12 2v2M12 20v2M4.9 4.9l1.4 1.4M17.7 17.7l1.4 1.4M2 12h2M20 12h2M4.9 19.1l1.4-1.4M17.7 6.3l1.4-1.4" /></svg>
+                ) : (
+                  <svg viewBox="0 0 24 24" className="h-4 w-4" fill="none" stroke="currentColor" strokeWidth="2"><path d="M21 12.8A9 9 0 1 1 11.2 3a7 7 0 0 0 9.8 9.8z" /></svg>
+                )}
+              </button>
+              <button
+                className="md:hidden inline-flex h-9 w-9 items-center justify-center rounded-lg border border-[var(--border)]"
                 aria-label="Toggle menu"
+                aria-expanded={open}
                 onClick={() => setOpen((v) => !v)}
               >
                 <svg viewBox="0 0 24 24" className="h-5 w-5">
@@ -319,180 +287,250 @@ export default function App() {
                   )}
                 </svg>
               </button>
-              <button
-                className="hidden md:inline-flex h-9 px-3 items-center justify-center rounded-lg border text-sm transition-colors hover:bg-gray-100"
-                aria-label="Toggle theme"
-                onClick={() => setTheme((t) => (t === "dark" ? "light" : "dark"))}
-              >
-                {theme === "dark" ? "Light" : "Dark"}
-              </button>
             </div>
           </div>
 
           {open && (
             <div className="md:hidden pb-4">
               <div className="grid gap-2 text-sm">
-                {["about","projects","experience","skills","contact"].map((id) => (
-                  <a key={id} href={`#${id}`} onClick={() => setOpen(false)} className="py-2 hover:text-[var(--accent)]">
-                    {id[0].toUpperCase()+id.slice(1)}
+                {SECTIONS.map((s) => (
+                  <a key={s.id} href={`#${s.id}`} onClick={() => setOpen(false)} className="py-2 hover:text-[var(--accent)]">
+                    {s.label}
                   </a>
                 ))}
-                <a href="#home" onClick={() => setOpen(false)} className="py-2 underline">
-                  Top
-                </a>
               </div>
             </div>
           )}
         </Container>
       </header>
 
-      {/* Hero */}
-      <section id="home" data-accent="var(--accent-1)" className="pt-16 md:pt-24">
-        <Container>
-          <div className="text-center" data-reveal>
-            <h1 className="text-5xl font-bold tracking-tight">Surya Murali</h1>
-            <p className="mt-4 text-xl text-[color:var(--muted)]">
-              Data Science • Machine Learning • Full-stack
-            </p>
-            <div className="mt-6 flex gap-4 justify-center">
-              <Button href="#projects">View Projects</Button>
-              <Button variant="outline" href={`mailto:${EMAIL}`}>Contact Me</Button>
-              <Button variant="outline" onClick={() => setTheme((t) => (t === "dark" ? "light" : "dark"))}>
-                {theme === "dark" ? "Light Mode" : "Dark Mode"}
-              </Button>
+      <main>
+        {/* Hero */}
+        <section id="home" data-accent="var(--accent-1)" className="pt-20 md:pt-28 pb-8">
+          <Container>
+            <div className="text-center" data-reveal>
+              <a
+                href="#research"
+                className="inline-flex items-center gap-2 rounded-full border border-[var(--border)] bg-[var(--surface)]/70 px-3 py-1 text-xs text-[color:var(--muted)] hover:text-[var(--fg)]"
+              >
+                <span className="pulse-dot" aria-hidden />
+                <span className="font-mono">now:</span> {NOW}
+              </a>
+              <h1 className="mt-6 text-5xl md:text-6xl font-bold tracking-tight">
+                <span className="name-shine">Surya Murali</span>
+              </h1>
+              <p className="mt-4 text-xl md:text-2xl h-8">
+                <RotatingRoles roles={ROLES} />
+              </p>
+              <p className="mt-4 max-w-2xl mx-auto text-[color:var(--muted)] leading-7">
+                Computer Science student at SFU (Statistics minor, 2027). I build AI tools that hold up in real operations,
+                and research where AI systems quietly fail.
+              </p>
+              <div className="mt-8 flex flex-wrap gap-3 justify-center">
+                <Button href="#experience">See my work</Button>
+                <Button variant="outline" href={`mailto:${EMAIL}`}>Contact me</Button>
+                <Button variant="outline" href={GITHUB} target="_blank" rel="noreferrer">GitHub</Button>
+              </div>
+              <p className="mt-4 text-xs font-mono text-[color:var(--muted)] hidden md:block">
+                tip: press <kbd className="kbd">/</kbd> to navigate like a terminal
+              </p>
+            </div>
+
+            {/* Impact stats */}
+            <div className="mt-14 grid grid-cols-2 md:grid-cols-4 gap-3">
+              {STATS.map((s, i) => (
+                <div key={s.label} className={`${CARD} p-4 text-left`} data-reveal style={{ "--d": `${i * 90}ms` }}>
+                  <div className="text-2xl md:text-3xl font-semibold text-[var(--accent)]">
+                    <CountUp value={s.value} suffix={s.suffix} />
+                  </div>
+                  <div className="mt-1 text-xs text-[color:var(--muted)] leading-5">{s.label}</div>
+                </div>
+              ))}
+            </div>
+          </Container>
+        </section>
+
+        {/* About */}
+        <Section id="about" index={1} title="About Me" accent="var(--accent-1)">
+          <div className="grid md:grid-cols-3 gap-6">
+            <div className="md:col-span-1 aspect-square profile-frame" data-reveal>
+              <img
+                src="/profile.png"
+                alt="Surya Murali"
+                loading="lazy"
+                decoding="async"
+                width="640"
+                height="640"
+                className="rounded-2xl border border-[var(--border)] object-cover w-full h-full shadow-sm"
+              />
+            </div>
+            <div className="md:col-span-2 space-y-4 text-[var(--fg)] leading-7" data-reveal style={{ "--d": "120ms" }}>
+              <p>Hi, I’m Surya 👋🏽 I was born and raised in New Delhi, India, in a Tamil family, and now I live in Vancouver, Canada while studying Computer Science (with a Statistics minor) at SFU.</p>
+              <p>On the tech side, I just wrapped a co-op as an AI Implementation Intern at Access World (Glencore), turning messy shipment spreadsheets into validated Oracle uploads. I’m also leading PhishForge, a capstone research project that stress-tests AI phishing detectors to find their blind spots.</p>
+              <p>Outside of code I’m in student government, as an SFSS Associate VP and an SFU Senator, because I like fixing things for people, not just for computers.</p>
+              <p>I love playing fingerstyle guitar, working out at the gym, and annoying my friends with weird jokes. Music is a big part of me: alternative rock, indie, and whatever random bands I find. Lately I’ve been learning Japanese, and one day I want to travel Japan and speak it fluently.</p>
+              <p>At the end of the day, I just enjoy building things, playing music, and finding ways to laugh a little louder.</p>
             </div>
           </div>
-        </Container>
-      </section>
+        </Section>
 
-      {/* About */}
-      <Section id="about" title="About Me" accent="var(--accent-1)">
-        <div className="grid md:grid-cols-3 gap-6">
-          <div className="md:col-span-1 aspect-square" data-reveal>
-            <img
-              src="/profile.png"
-              alt="Surya Murali"
-              loading="lazy"
-              decoding="async"
-              fetchpriority="low"
-              width="640"
-              height="640"
-              className="rounded-2xl border object-cover w-full h-full shadow-sm ring-1 ring-black/5"
-            />
-          </div>
-          <div className="md:col-span-2 space-y-4 text-[var(--fg)] leading-7" data-reveal>
-            <p>Hi, I’m Surya 👋🏽 I was born and raised in New Delhi, India, in a Tamil family, and now I live in Vancouver, Canada while studying Computer Science at SFU.</p>
-            <p>I love playing fingerstyle guitar, working out at the gym, and annoying my friends with weird jokes. Music is a big part of me, I’m always listening to alternative rock, indie, and whatever random bands I find.</p>
-            <p>Lately I’ve been getting into learning Japanese, and one of my dreams is to travel Japan and someday speak the language fluently. That dream isn’t the strongest right now because between school, co-curriculars, and lazy phases I tend to drop the ball, but it’s still there.</p>
-            <p>On the tech side, I’m into data science working with machine learning and analytics-and I’ve been dipping my toes into web development to bring some of my ideas to life.</p>
-            <p>At the end of the day, I just enjoy building things, playing music, and finding ways to laugh a little louder.</p>
-          </div>
-        </div>
-      </Section>
-
-      {/* Projects */}
-      <Section id="projects" title="Projects" accent="var(--accent-1)">
-        <div className="grid md:grid-cols-2 gap-5">
-          {PROJECTS.map((p) => (
-            <article
-              key={p.title}
-              className="group rounded-2xl border p-5 bg-[var(--surface)] text-[var(--fg)] border-[var(--border)]
-                         hover:shadow-md translate-y-0 hover:-translate-y-0.5 hover:bg-[var(--surface-hover)]
-                         transition-transform transition-shadow transition-colors duration-[900ms] ease-[cubic-bezier(.22,.61,.36,1)] transform-gpu
-                         motion-reduce:transform-none motion-reduce:transition-none
-                         ring-1 ring-transparent hover:ring-[var(--accent)]/20"
-              data-reveal
-            >
-              <div className="flex items-start justify-between gap-3">
-                <div>
-                  <h3 className="font-semibold text-lg">{p.title}</h3>
-                  <p className="mt-2 text-sm text-[color:var(--muted)]">{p.blurb}</p>
+        <div ref={timelineRef} className="timeline-wrap">
+          {/* Experience */}
+          <Section id="experience" index={2} title="Experience" accent="var(--accent-2)">
+            <div className="relative">
+              <div aria-hidden className="timeline" />
+              {WORK.map((w) => (
+                <div key={w.role} className="relative pl-8 md:pl-12" data-reveal>
+                  <span aria-hidden className="timeline-dot" />
+                  <article className={`${CARD} p-5 md:p-6`}>
+                    <div className="flex flex-wrap items-baseline justify-between gap-2">
+                      <h3 className="font-semibold text-lg">
+                        {w.role} <span className="text-[color:var(--muted)] font-normal">· {w.team}</span>
+                      </h3>
+                      <span className="text-sm font-mono text-[color:var(--muted)]">{w.time}</span>
+                    </div>
+                    <p className="mt-1 text-sm">
+                      <span className="text-[var(--accent)] font-medium">{w.org}</span>
+                      <span className="text-[color:var(--muted)]"> · {w.where}</span>
+                    </p>
+                    <ul className="mt-4 space-y-2 text-sm text-[color:var(--muted)] leading-6">
+                      {w.bullets.map((b, i) => (
+                        <li key={i} className="flex gap-2"><span className="font-mono text-[var(--accent)]">▹</span><span>{b}</span></li>
+                      ))}
+                    </ul>
+                    <Tags items={w.tags} />
+                  </article>
                 </div>
-                <div className="shrink-0 flex gap-3">
-                  {p.links?.code && (
-                    <Button variant="link" href={p.links.code} target="_blank" rel="noreferrer" className="text-sm">
-                      Code
-                    </Button>
+              ))}
+            </div>
+          </Section>
+
+          {/* Research */}
+          <Section id="research" index={3} title="Research" accent="var(--accent-1)">
+            <div className="relative">
+              <div aria-hidden className="timeline" />
+              <div className="relative pl-8 md:pl-12" data-reveal>
+                <span aria-hidden className="timeline-dot" />
+                <article className={`${CARD} p-5 md:p-6`}>
+                  <div className="flex flex-wrap items-baseline justify-between gap-2">
+                    <h3 className="font-semibold text-lg">{RESEARCH.title}</h3>
+                    <span className="text-sm font-mono text-[color:var(--muted)]">{RESEARCH.time}</span>
+                  </div>
+                  <p className="mt-1 text-sm text-[color:var(--muted)]">{RESEARCH.context}</p>
+                  <div className="mt-4 grid md:grid-cols-5 gap-6">
+                    <ul className="md:col-span-3 space-y-2 text-sm text-[color:var(--muted)] leading-6">
+                      {RESEARCH.bullets.map((b, i) => (
+                        <li key={i} className="flex gap-2"><span className="font-mono text-[var(--accent)]">▹</span><span>{b}</span></li>
+                      ))}
+                    </ul>
+                    <div className="md:col-span-2 rounded-xl border border-[var(--border)] p-4 self-start bg-[var(--bg)]/40">
+                      <p className="text-xs font-mono text-[var(--accent)] mb-3">// key finding</p>
+                      <RecallBars data={RESEARCH.recall} />
+                    </div>
+                  </div>
+                  <Tags items={RESEARCH.tags} />
+                </article>
+              </div>
+            </div>
+          </Section>
+        </div>
+
+        {/* Projects */}
+        <Section id="projects" index={4} title="Projects" accent="var(--accent-2)">
+          <div className="grid md:grid-cols-2 gap-5">
+            {PROJECTS.map((p, i) => (
+              <article key={p.title} className={`${CARD} group p-5 flex flex-col`} data-reveal style={{ "--d": `${(i % 2) * 120}ms` }}>
+                <span className="self-start text-[11px] font-mono px-2 py-0.5 rounded-full border border-[var(--accent)]/40 text-[var(--accent)]">
+                  {p.badge}
+                </span>
+                <h3 className="mt-3 font-semibold text-lg">{p.title}</h3>
+                <p className="mt-2 text-sm text-[color:var(--muted)] leading-6 flex-1">{p.blurb}</p>
+                <Tags items={p.tags} />
+                {(p.links.code || p.links.live) && (
+                  <div className="mt-4 flex gap-4 text-sm">
+                    {p.links.code && <Button variant="link" href={p.links.code} target="_blank" rel="noreferrer">Code ↗</Button>}
+                    {p.links.live && <Button variant="link" href={p.links.live} target="_blank" rel="noreferrer">Live ↗</Button>}
+                  </div>
+                )}
+              </article>
+            ))}
+          </div>
+
+          <div className="mt-10" data-reveal>
+            <p className="text-sm font-mono text-[color:var(--muted)]">$ ls ./more-builds</p>
+            <ul className="mt-3 divide-y divide-[var(--border)] border-y border-[var(--border)]">
+              {MORE_PROJECTS.map((m) => (
+                <li key={m.title} className="py-3 flex flex-wrap items-center justify-between gap-2 text-sm">
+                  {m.href ? (
+                    <a href={m.href} target="_blank" rel="noreferrer" className="hover:text-[var(--accent)]">{m.title} ↗</a>
+                  ) : (
+                    <span>{m.title}</span>
                   )}
+                  <span className="text-xs font-mono text-[color:var(--muted)]">{m.tags.join(" · ")}</span>
+                </li>
+              ))}
+            </ul>
+          </div>
+        </Section>
+
+        {/* Leadership */}
+        <Section id="leadership" index={5} title="Leadership" accent="var(--accent-1)">
+          <div className="grid md:grid-cols-3 gap-4">
+            {LEADERSHIP.map((e, i) => (
+              <article key={e.role} className={`${CARD} p-5`} data-reveal style={{ "--d": `${i * 100}ms` }}>
+                <p className="text-xs font-mono text-[color:var(--muted)]">{e.time}</p>
+                <h3 className="mt-2 font-semibold leading-snug">{e.role}</h3>
+                <p className="text-sm text-[var(--accent)]">{e.org}</p>
+                <ul className="mt-3 space-y-2 text-sm text-[color:var(--muted)] leading-6">
+                  {e.bullets.map((b, j) => <li key={j}>{b}</li>)}
+                </ul>
+              </article>
+            ))}
+          </div>
+        </Section>
+
+        {/* Skills */}
+        <Section id="skills" index={6} title="Skills" accent="var(--accent-2)">
+          <div className="grid md:grid-cols-2 gap-4">
+            {SKILLS.map((g, i) => (
+              <div key={g.group} className={`${CARD} p-5`} data-reveal style={{ "--d": `${(i % 2) * 100}ms` }}>
+                <h3 className="text-sm font-mono text-[var(--accent)]">{g.group}</h3>
+                <div className="mt-3 flex flex-wrap gap-2">
+                  {g.items.map((s) => (
+                    <span key={s} className="skill-chip px-2.5 py-1 text-sm rounded-lg border border-[var(--border)] bg-[var(--surface)]">
+                      {s}
+                    </span>
+                  ))}
                 </div>
               </div>
-              <div className="mt-4 flex flex-wrap gap-2">
-                {p.tags.map((t) => (
-                  <span key={t} className="px-2 py-1 text-xs rounded-full border bg-[var(--surface)] border-[var(--border)] group-hover:bg-[var(--surface-hover)]">
-                    {t}
-                  </span>
-                ))}
-              </div>
-            </article>
-          ))}
-        </div>
-      </Section>
-
-      {/* Experience */}
-      <Section id="experience" title="Experience" accent="var(--accent-2)">
-        <div className="space-y-4">
-          {EXPERIENCE.map((e) => (
-            <article
-              key={e.role}
-              className="rounded-2xl border p-4 bg-[var(--surface)] text-[var(--fg)] border-[var(--border)]
-                         hover:shadow-md translate-y-0 hover:-translate-y-0.5 hover:bg-[var(--surface-hover)]
-                         transition-transform transition-shadow transition-colors duration-[900ms] ease-[cubic-bezier(.22,.61,.36,1)] transform-gpu
-                         motion-reduce:transform-none motion-reduce:transition-none
-                         ring-1 ring-transparent hover:ring-[var(--accent)]/20"
-              data-reveal
-            >
-              <div className="flex flex-wrap items-baseline justify-between gap-2">
-                <h3 className="font-semibold">
-                  {e.role} · <span className="text-[color:var(--muted)]">{e.org}</span>
-                </h3>
-                <span className="text-sm text-[color:var(--muted)]">{e.time}</span>
-              </div>
-              <ul className="mt-2 list-disc pl-5 text-sm text-[color:var(--muted)] space-y-1">
-                {e.bullets.map((b, i) => <li key={i}>{b}</li>)}
-              </ul>
-            </article>
-          ))}
-        </div>
-      </Section>
-
-      {/* Skills */}
-      <Section id="skills" title="Skills" accent="var(--accent-1)">
-        <div className="grid grid-cols-2 md:grid-cols-4 gap-2">
-          {SKILLS.map((s) => (
-            <div
-              key={s}
-              className="rounded-xl border px-3 py-2 text-sm text-center bg-[var(--surface)] text-[var(--fg)] border-[var(--border)]
-                         hover:bg-[var(--surface-hover)] translate-y-0 hover:-translate-y-0.5
-                         transition-transform transition-colors duration-[900ms] ease-[cubic-bezier(.22,.61,.36,1)] transform-gpu
-                         motion-reduce:transform-none motion-reduce:transition-none"
-              data-reveal
-            >
-              {s}
-            </div>
-          ))}
-        </div>
-      </Section>
-
-      {/* Contact */}
-      <Section id="contact" title="Contact" accent="var(--accent-2)">
-        <div
-          className="rounded-2xl border p-6 space-y-3 text-[var(--fg)] bg-[var(--surface)] border-[var(--border)]
-                     hover:shadow-md translate-y-0 hover:-translate-y-0.5 hover:bg-[var(--surface-hover)]
-                     transition-transform transition-shadow transition-colors duration-[900ms] ease-[cubic-bezier(.22,.61,.36,1)] transform-gpu
-                     motion-reduce:transform-none motion-reduce:transition-none
-                     ring-1 ring-transparent hover:ring-[var(--accent)]/20"
-          data-reveal
-        >
-          <div className="flex flex-wrap gap-3">
-            <Button variant="outline" href={`mailto:${EMAIL}`}>Email Me</Button>
-            <Button variant="outline" href={LINKEDIN} target="_blank" rel="noreferrer">LinkedIn</Button>
+            ))}
           </div>
-        </div>
-      </Section>
+        </Section>
 
-      <footer className="py-16 text-center text-sm text-gray-600">
-        © {new Date().getFullYear()} Surya Murali. Built with React & Tailwind v4.
+        {/* Contact */}
+        <Section id="contact" index={7} title="Contact" accent="var(--accent-1)">
+          <div className={`${CARD} p-6 md:p-8`} data-reveal>
+            <p className="text-lg">Want to talk about AI tooling, research, or a role? My inbox is open.</p>
+            <p className="mt-1 text-sm text-[color:var(--muted)]">
+              Or reach me at my SFU address: <a className="underline hover:text-[var(--accent)]" href={`mailto:${SFU_EMAIL}`}>{SFU_EMAIL}</a>
+            </p>
+            <div className="mt-6 flex flex-wrap gap-3">
+              <Button href={`mailto:${EMAIL}`}>Email me</Button>
+              <Button variant="outline" onClick={copyEmail}>Copy email</Button>
+              <Button variant="outline" href={LINKEDIN} target="_blank" rel="noreferrer">LinkedIn</Button>
+              <Button variant="outline" href={GITHUB} target="_blank" rel="noreferrer">GitHub</Button>
+            </div>
+          </div>
+        </Section>
+      </main>
+
+      <footer className="py-16 text-center text-sm text-[color:var(--muted)]">
+        <p>© {new Date().getFullYear()} Surya Murali. Built with React & Tailwind v4.</p>
+        <p className="mt-2 font-mono text-xs opacity-70">psst… ↑ ↑ ↓ ↓ ← → ← → B A</p>
       </footer>
+
+      <CommandPalette open={paletteOpen} onClose={() => setPaletteOpen(false)} commands={commands} />
+      <Toast message={toast} />
     </div>
   );
 }
