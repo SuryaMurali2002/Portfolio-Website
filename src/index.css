@@ -54,7 +54,7 @@
 
 html { scroll-behavior: smooth; }
 html, body, #root { height: 100%; }
-body { color: var(--fg); }
+body { color: var(--fg); background: var(--bg); }
 
 /* Site-wide soft transitions */
 * {
@@ -103,15 +103,192 @@ a { text-underline-offset: 3px; }
   background-size: 280px 280px;
 }
 
-/* Dark-only code rain canvas */
+/* Code rain canvas (dark mode by default; Konami code enables it anywhere) */
 .code-rain {
   position: fixed;
   inset: 0;
   z-index: -8; /* above gradient + grain, below content */
   pointer-events: none;
   opacity: 0.18;
-  transition: opacity var(--dur) var(--ease);
+  animation: fadeIn 1.2s var(--ease);
 }
+.code-rain--intense { opacity: 0.28; }
+@keyframes fadeIn { from { opacity: 0; } }
+
+/* ---------- Scroll progress ---------- */
+.scroll-progress {
+  position: fixed;
+  top: 0; left: 0; right: 0;
+  height: 2px;
+  z-index: 60;
+  transform-origin: 0 50%;
+  transform: scaleX(0);
+  background: linear-gradient(90deg, var(--accent-1), var(--accent-2));
+  transition: none;
+  pointer-events: none;
+}
+
+/* ---------- Reveal on scroll (staggered via --d) ---------- */
+[data-reveal] {
+  opacity: 0;
+  transform: translateY(14px);
+  transition:
+    opacity 900ms cubic-bezier(.22,.61,.36,1) var(--d, 0ms),
+    transform 900ms cubic-bezier(.22,.61,.36,1) var(--d, 0ms),
+    translate 900ms cubic-bezier(.22,.61,.36,1),
+    box-shadow var(--dur) var(--ease),
+    background-color var(--dur) var(--ease),
+    border-color var(--dur) var(--ease);
+}
+[data-reveal].revealed { opacity: 1; transform: none; }
+
+/* ---------- Cursor spotlight on cards ---------- */
+.spotlight { isolation: isolate; overflow: hidden; }
+.spotlight::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  z-index: -1;
+  border-radius: inherit;
+  pointer-events: none;
+  opacity: 0;
+  background: radial-gradient(
+    360px circle at var(--mx, 50%) var(--my, 50%),
+    color-mix(in srgb, var(--accent) 14%, transparent),
+    transparent 65%
+  );
+  transition: opacity 500ms var(--ease);
+}
+.spotlight:hover::before { opacity: 1; }
+
+/* ---------- Hero bits ---------- */
+.caret {
+  display: inline-block;
+  margin-left: 2px;
+  animation: blink 1.05s steps(1) infinite;
+}
+@keyframes blink { 50% { opacity: 0; } }
+
+.pulse-dot {
+  position: relative;
+  width: 8px; height: 8px;
+  border-radius: 9999px;
+  background: hsl(145 55% 45%);
+}
+.pulse-dot::after {
+  content: "";
+  position: absolute; inset: 0;
+  border-radius: inherit;
+  background: inherit;
+  animation: ping 2s cubic-bezier(0,0,.2,1) infinite;
+}
+@keyframes ping { 75%, 100% { transform: scale(2.4); opacity: 0; } }
+
+/* Slow accent sheen across the name, in step with the breathing gradient */
+.name-shine {
+  background: linear-gradient(100deg, var(--fg) 0%, var(--fg) 40%, var(--accent-1) 50%, var(--accent-2) 55%, var(--fg) 65%, var(--fg) 100%);
+  background-size: 250% 100%;
+  -webkit-background-clip: text;
+  background-clip: text;
+  color: transparent;
+  animation: shine 9s var(--ease) infinite;
+}
+@keyframes shine {
+  0%, 20% { background-position: 100% 0; }
+  60%, 100% { background-position: 0% 0; }
+}
+
+.profile-frame img { transition: transform 900ms cubic-bezier(.22,.61,.36,1), box-shadow var(--dur) var(--ease); }
+.profile-frame:hover img {
+  transform: rotate(-1.5deg) scale(1.02);
+  box-shadow: 10px 10px 0 -2px var(--accent);
+}
+
+/* ---------- Timeline ---------- */
+.timeline {
+  position: absolute;
+  left: 7px;
+  top: 0; bottom: 0;
+  width: 2px;
+  background: var(--border);
+  border-radius: 2px;
+}
+@media (min-width: 768px) { .timeline { left: 15px; } }
+.timeline::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(var(--accent-1), var(--accent-2));
+  transform-origin: top;
+  transform: scaleY(var(--progress, 0));
+  transition: none;
+  border-radius: inherit;
+}
+.timeline-dot {
+  position: absolute;
+  left: 2px; top: 1.6rem;
+  width: 12px; height: 12px;
+  border-radius: 9999px;
+  background: var(--bg);
+  border: 2px solid var(--accent);
+  box-shadow: 0 0 0 4px color-mix(in srgb, var(--accent) 18%, transparent);
+}
+@media (min-width: 768px) { .timeline-dot { left: 10px; } }
+
+/* ---------- Bars, chips, kbd ---------- */
+.bar { transition: width 1400ms cubic-bezier(.22,.61,.36,1); }
+
+.skill-chip { display: inline-block; }
+.skill-chip:hover {
+  transform: translateY(-2px);
+  border-color: var(--accent);
+  color: var(--accent);
+}
+
+.kbd {
+  font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+  font-size: 11px;
+  line-height: 1;
+  padding: 3px 5px;
+  border: 1px solid var(--border);
+  border-bottom-width: 2px;
+  border-radius: 5px;
+  background: var(--surface);
+  color: var(--muted);
+}
+
+/* ---------- Command palette + toast ---------- */
+.palette-fade { animation: fadeIn 200ms var(--ease); }
+.palette-pop { animation: pop 220ms cubic-bezier(.22,.61,.36,1); }
+@keyframes pop { from { opacity: 0; transform: translateY(-8px) scale(.98); } }
+
+.toast {
+  position: fixed;
+  left: 50%;
+  bottom: 24px;
+  z-index: 110;
+  transform: translate(-50%, 20px);
+  opacity: 0;
+  pointer-events: none;
+  padding: 10px 14px;
+  border-radius: 12px;
+  border: 1px solid var(--border);
+  background: var(--surface);
+  color: var(--fg);
+  box-shadow: 0 10px 30px -10px rgb(0 0 0 / .35);
+  transition: opacity 300ms var(--ease), transform 300ms var(--ease);
+  max-width: calc(100vw - 32px);
+}
+.toast--show { opacity: 1; transform: translate(-50%, 0); }
+
+::selection { background: color-mix(in srgb, var(--accent) 30%, transparent); }
+
+/* ---------- Reduced motion: keep it calm ---------- */
 @media (prefers-reduced-motion: reduce) {
   .code-rain { display: none; }
+  .gradient-bg, .name-shine, .caret, .pulse-dot::after { animation: none; }
+  [data-reveal] { opacity: 1; transform: none; transition: none; }
+  .bar, .timeline::after { transition: none; }
+  .timeline::after { transform: none; }
+  html { scroll-behavior: auto; }
 }
