@@ -27,7 +27,9 @@ export function ScrambleText({ text, start = true, speed = 28, className = "" })
       setOut(next);
       if (done) clearInterval(id);
     }, speed);
-    return () => clearInterval(id);
+    const finish = () => { clearInterval(id); setOut(text); };
+    window.addEventListener("beforeprint", finish);
+    return () => { clearInterval(id); window.removeEventListener("beforeprint", finish); };
   }, [text, start, speed]);
   return (
     <span className={className} aria-label={text}>
@@ -63,12 +65,24 @@ export function SectionHeading({ index, title }) {
   );
 }
 
+// While printing, every animated number snaps to its final value.
+let printing = false;
+if (typeof window !== "undefined") {
+  window.addEventListener("beforeprint", () => { printing = true; });
+  window.addEventListener("afterprint", () => { printing = false; });
+}
+
 /* ------------------------------------------------------------------ */
 /* Count-up number, eased, starts when visible.                         */
 /* ------------------------------------------------------------------ */
 export function CountUp({ value, suffix = "", decimals = 0, duration = 1600 }) {
   const [ref, inView] = useInView({ threshold: 0.5 });
   const [n, setN] = useState(0);
+  useEffect(() => {
+    const finish = () => setN(value);
+    window.addEventListener("beforeprint", finish);
+    return () => window.removeEventListener("beforeprint", finish);
+  }, [value]);
   useEffect(() => {
     if (!inView) return;
     if (prefersReducedMotion()) {
@@ -78,7 +92,7 @@ export function CountUp({ value, suffix = "", decimals = 0, duration = 1600 }) {
     let raf;
     const t0 = performance.now();
     const tick = (t) => {
-      const p = Math.min(1, (t - t0) / duration);
+      const p = printing ? 1 : Math.min(1, (t - t0) / duration);
       const eased = 1 - Math.pow(1 - p, 3);
       setN(value * eased);
       if (p < 1) raf = requestAnimationFrame(tick);
@@ -108,7 +122,7 @@ export function RecallBars({ data }) {
           <div className="mt-1 h-2 rounded-full bg-[var(--surface-hover)] overflow-hidden">
             <div
               className="bar h-full rounded-full bg-[var(--accent)]"
-              style={{ width: inView ? `${d.value}%` : "0%" }}
+              style={{ width: inView ? `${d.value}%` : "0%", "--w": `${d.value}%` }}
             />
           </div>
         </div>

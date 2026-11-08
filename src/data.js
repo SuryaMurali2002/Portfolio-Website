@@ -12,7 +12,11 @@ export const ROLES = [
   "Automation Engineer",
 ];
 
-export const NOW = "Leading PhishForge, a capstone benchmark for AI phishing detectors";
+// Timeless hero badge (no "currently…" copy that goes stale).
+export const BADGE = "Computer Science @ SFU · Vancouver, BC";
+
+// Dates are "YYYY-MM". Leave `end` as null for an ongoing role: it renders as
+// "Present". When a role ends, set `end` and nothing else needs to change.
 
 // Impact numbers shown in the hero strip (count-up animated).
 export const STATS = [
@@ -28,9 +32,10 @@ export const WORK = [
     team: "Operations Software & Automation",
     org: "Access World Canada (Glencore)",
     where: "Toronto, ON · Co-op",
-    time: "Jun 2026 – Nov 2026",
+    start: "2026-06",
+    end: "2026-11",
     bullets: [
-      "Built a Python tool (pandas, openpyxl, Streamlit) that turns customer shipment workbooks into Oracle Fusion Advance Shipment Notice upload files, cutting prep from about 2 hours to 15–20 minutes including review; output passed Oracle upload validation on a live shipment.",
+      "Built a Python tool (pandas, openpyxl, Streamlit) that turned customer shipment workbooks into Oracle Fusion Advance Shipment Notice upload files, cutting prep from about 2 hours to 15–20 minutes including review; output passed Oracle upload validation on a live shipment.",
       "Designed validation for fields Oracle accepts silently but that block goods receipt downstream, with plain-language fix guidance for non-technical staff; wrote 389 pytest tests plus a Playwright end-to-end suite that caught two defects unit tests had missed.",
       "Shipped a zero-install Windows package on signed embedded Python with an allowlisted file set, hash-pinned dependencies, verified loopback-only networking, and an automated scan blocking confidential identifiers.",
       "Delivered a formula-only Excel carrier capability master (lane search, data-quality checks, 1,000-carrier capacity) generated from a YAML schema with 16 tests, built for hand-off to non-technical owners.",
@@ -43,9 +48,10 @@ export const WORK = [
 export const RESEARCH = {
   title: "PhishForge: Blind-Spot Benchmark for AI Phishing Detectors",
   context: "CMPT 495 capstone · faculty-supervised · SFU",
-  time: "Jan 2026 – Present",
+  start: "2026-01",
+  end: null,
   bullets: [
-    "Lead the generation pipeline, attack vectors, analysis and write-up for a benchmark that synthesizes phishing pages each denying one evidence class, then profiles where AI detectors fail.",
+    "Led the generation pipeline, attack vectors, analysis and write-up for a benchmark that synthesized phishing pages each denying one evidence class, then profiled where AI detectors failed.",
     "Generated a 425-sample corpus across 12 sectors, 5 locales, 8 scenarios and 15 brands with a local code LLM served by Ollama, behind a circularity firewall separating the generator from the detector under test.",
     "Showed an agentic detector defaulted to benign whenever no brand was identified: 6.3% recall on brand-less pages vs 98.5% on branded, traced to a single routing rule; all five screenshot detectors in the harness proved brand-anchored.",
     "Built four evidence-denial vectors (deferred rendering, brand-cue perturbation, obfuscated submission target, off-origin POST) with build-time verification gates; reported a confirmed negative result and fixed a silent 2,048-token context truncation in the generator.",
@@ -63,7 +69,7 @@ export const PROJECTS = [
     title: "SFU C2C: AI Course & Internship Planner",
     badge: "🏆 People's Choice · XHacks",
     blurb:
-      "Full-stack advising platform built in 24 hours (team of 4) that parses uploaded transcripts into role-targeted course roadmaps. Hybrid regex + LLM-fallback parser with parallel calls to the SFU Courses API and a cached internship dataset.",
+      "Full-stack advising platform built in 24 hours (team of 4) that parsed uploaded transcripts into role-targeted course roadmaps. Hybrid regex + LLM-fallback parser with parallel calls to the SFU Courses API and a cached internship dataset.",
     tags: ["Next.js 14", "TypeScript", "OpenAI API", "Tailwind"],
     links: { code: "https://github.com/SuryaMurali2002/Xhack_hackathon" },
   },
@@ -82,7 +88,7 @@ export const PROJECTS = [
     title: "Kaeru: AI Financial Concierge",
     badge: "StormHacks 2025",
     blurb:
-      "Voice-driven assistant built in 24 hours (team of 4) that cancels subscriptions by phone via VAPI and Twilio on a serverless AWS backend; fraud detection with Bedrock and Step Functions hit 80–90% success in controlled tests.",
+      "Voice-driven assistant built in 24 hours (team of 4) that cancelled subscriptions by phone via VAPI and Twilio on a serverless AWS backend; fraud detection with Bedrock and Step Functions hit 80–90% success in controlled tests.",
     tags: ["AWS Lambda", "Cognito", "DynamoDB", "Step Functions", "Twilio"],
     links: {},
   },
@@ -115,7 +121,8 @@ export const LEADERSHIP = [
   {
     role: "Associate VP, External and Community Affairs",
     org: "Simon Fraser Student Society",
-    time: "May 2025 – Present",
+    start: "2025-05",
+    end: null,
     bullets: [
       "Led affordability advocacy, including proposals to expand Open Educational Resources modelled on smaller-scale successes like Kwantlen Polytechnic.",
       "Worked with student leaders across BC on joint actions, including the Open Letter to BC Ferries for reduced student fares across SFU, UBC, and UVic.",
@@ -124,7 +131,8 @@ export const LEADERSHIP = [
   {
     role: "Undergraduate Senator",
     org: "SFU Senate",
-    time: "May 2025 – Present",
+    start: "2025-05",
+    end: null,
     bullets: [
       "Shaped policy discussion around SFU's new medical school, focusing on fair admissions and international student access.",
       "Member of the Senate Committee on University Priorities, advising on academic planning and budget allocation.",
@@ -133,7 +141,8 @@ export const LEADERSHIP = [
   {
     role: "National Communications Coordinator",
     org: "Residence Hall Association",
-    time: "May 2025 – Present",
+    start: "2025-05",
+    end: null,
     bullets: [
       "Built partnerships with UBC's RHA and PACURH schools to exchange residence-life best practices.",
       "Led communications and delegation prep for SFU at PACURH/NACURH conferences.",
