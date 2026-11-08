@@ -1,7 +1,7 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { flushSync } from "react-dom";
 import {
-  EMAIL, SFU_EMAIL, LINKEDIN, GITHUB, ROLES, BADGE, STATS,
+  EMAIL, LINKEDIN, GITHUB, ROLES, BADGE, STATS,
   WORK, RESEARCH, PROJECTS, MORE_PROJECTS, LEADERSHIP, SKILLS,
 } from "./data.js";
 import { useKonami, useSpotlight, useZonedTime, formatRange, prefersReducedMotion } from "./hooks.js";
@@ -570,7 +570,7 @@ export default function App() {
           <div className={`${CARD} p-6 md:p-8`} data-reveal>
             <p className="text-lg">Want to talk about AI tooling, research, or a role? My inbox is open.</p>
             <p className="mt-1 text-sm text-[color:var(--muted)]">
-              Or reach me at my SFU address: <a className="underline hover:text-[var(--accent)]" href={`mailto:${SFU_EMAIL}`}>{SFU_EMAIL}</a>
+              Reach me at <a className="underline hover:text-[var(--accent)]" href={`mailto:${EMAIL}`}>{EMAIL}</a>
             </p>
             <p className="mt-3 text-xs font-mono text-[color:var(--muted)]">
               <span className="pulse-dot inline-block mr-2 align-middle" aria-hidden />

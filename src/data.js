@@ -1,7 +1,6 @@
 // Content sourced from Surya's resume (Nov 2026).
 
 export const EMAIL = "suryamurali2002@gmail.com";
-export const SFU_EMAIL = "sma284@sfu.ca";
 export const LINKEDIN = "https://www.linkedin.com/in/surya-murali-5a32b9310/";
 export const GITHUB = "https://github.com/SuryaMurali2002";
 
