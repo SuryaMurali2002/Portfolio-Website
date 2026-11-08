@@ -2,15 +2,49 @@
 <html lang="en">
   <head>
     <meta charset="UTF-8" />
-    <link rel="icon" type="image/svg+xml" href="/vite.svg" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>Surya Murali | Portfolio</title>
-  </head>
-  <body class="text-gray-900 antialiased">
-    <!-- React mounts here -->
-    <div id="root"></div>
+    <meta name="description" content="Surya Murali: Computer Science at SFU. AI implementation, ML research on AI phishing detectors, and full-stack projects." />
+    <meta name="author" content="Surya Murali" />
+    <meta name="theme-color" content="#f6f7f9" />
+    <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
+    <link rel="apple-touch-icon" href="/profile.png" />
 
-    <!-- Vite entry -->
+    <!-- Link previews (LinkedIn, Slack, iMessage…) -->
+    <meta property="og:type" content="website" />
+    <meta property="og:title" content="Surya Murali | Portfolio" />
+    <meta property="og:description" content="AI implementation, ML research, and full-stack projects by Surya Murali." />
+    <meta property="og:image" content="https://portfolio-website-zeta-beryl-62.vercel.app/profile.png" />
+    <meta property="og:url" content="https://portfolio-website-zeta-beryl-62.vercel.app/" />
+    <meta name="twitter:card" content="summary" />
+
+    <script type="application/ld+json">
+      {
+        "@context": "https://schema.org",
+        "@type": "Person",
+        "name": "Surya Murali",
+        "url": "https://portfolio-website-zeta-beryl-62.vercel.app/",
+        "alumniOf": "Simon Fraser University",
+        "sameAs": [
+          "https://github.com/SuryaMurali2002",
+          "https://www.linkedin.com/in/surya-murali-5a32b9310/"
+        ]
+      }
+    </script>
+
+    <!-- Set the theme before first paint so there is no light/dark flash -->
+    <script>
+      (function () {
+        try {
+          var t = localStorage.getItem("theme");
+          if (!t) t = matchMedia("(prefers-color-scheme: dark)").matches ? "dark" : "light";
+          document.documentElement.setAttribute("data-theme", t);
+        } catch (e) {}
+      })();
+    </script>
+  </head>
+  <body class="antialiased">
+    <div id="root"></div>
     <script type="module" src="/src/main.jsx"></script>
   </body>
 </html>

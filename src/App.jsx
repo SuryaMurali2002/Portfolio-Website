@@ -1,9 +1,10 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { flushSync } from "react-dom";
 import {
-  EMAIL, SFU_EMAIL, LINKEDIN, GITHUB, ROLES, NOW, STATS,
+  EMAIL, SFU_EMAIL, LINKEDIN, GITHUB, ROLES, BADGE, STATS,
   WORK, RESEARCH, PROJECTS, MORE_PROJECTS, LEADERSHIP, SKILLS,
 } from "./data.js";
-import { useKonami, useSpotlight, prefersReducedMotion } from "./hooks.js";
+import { useKonami, useSpotlight, useZonedTime, formatRange, prefersReducedMotion } from "./hooks.js";
 import {
   CodeRain, CommandPalette, CountUp, RecallBars, RotatingRoles,
   ScrollProgress, SectionHeading, Toast,
@@ -83,13 +84,13 @@ export default function App() {
   const [rainMode, setRainMode] = useState(false);
   const [toast, setToast] = useState("");
   const toastTimer = useRef(0);
-  const [theme, setTheme] = useState(() => {
-    try {
-      const saved = localStorage.getItem("theme");
-      if (saved) return saved;
-    } catch { /* storage blocked */ }
-    return window.matchMedia?.("(prefers-color-scheme: dark)").matches ? "dark" : "light";
-  });
+  const readSaved = () => {
+    try { return localStorage.getItem("theme"); } catch { return null; }
+  };
+  const systemTheme = () => (window.matchMedia?.("(prefers-color-scheme: dark)").matches ? "dark" : "light");
+  const [theme, setTheme] = useState(() => readSaved() || systemTheme());
+  const [showTop, setShowTop] = useState(false);
+  const vancouverTime = useZonedTime("America/Vancouver");
 
   const isMac = typeof navigator !== "undefined" && /Mac|iPhone|iPad/.test(navigator.platform);
 
@@ -99,7 +100,51 @@ export default function App() {
     toastTimer.current = setTimeout(() => setToast(""), 2600);
   }, []);
 
-  const toggleTheme = useCallback(() => setTheme((t) => (t === "dark" ? "light" : "dark")), []);
+  // Theme toggle with a circular reveal from wherever the click happened
+  // (View Transitions API). Falls back to the normal colour fade elsewhere.
+  const toggleTheme = useCallback((e) => {
+    const next = document.documentElement.dataset.theme === "dark" ? "light" : "dark";
+    try { localStorage.setItem("theme", next); } catch { /* storage blocked */ }
+    const apply = () => {
+      document.documentElement.setAttribute("data-theme", next);
+      flushSync(() => setTheme(next));
+    };
+    if (!document.startViewTransition || prefersReducedMotion()) return apply();
+    const x = e?.clientX ?? window.innerWidth - 40;
+    const y = e?.clientY ?? 28;
+    const root = document.documentElement;
+    root.style.setProperty("--vt-x", `${x}px`);
+    root.style.setProperty("--vt-y", `${y}px`);
+    root.style.setProperty("--vt-r", `${Math.hypot(Math.max(x, innerWidth - x), Math.max(y, innerHeight - y))}px`);
+    root.classList.add("vt-theme");
+    const vt = document.startViewTransition(apply);
+    vt.finished.finally(() => root.classList.remove("vt-theme"));
+  }, []);
+
+  // Follow the OS theme live, until the visitor picks one themselves.
+  useEffect(() => {
+    const mq = window.matchMedia?.("(prefers-color-scheme: dark)");
+    if (!mq) return;
+    const onChange = () => { if (!readSaved()) setTheme(mq.matches ? "dark" : "light"); };
+    mq.addEventListener("change", onChange);
+    return () => mq.removeEventListener("change", onChange);
+  }, []);
+
+  // Back-to-top button appears after the first screen.
+  useEffect(() => {
+    const onScroll = () => setShowTop(window.scrollY > window.innerHeight);
+    onScroll();
+    window.addEventListener("scroll", onScroll, { passive: true });
+    return () => window.removeEventListener("scroll", onScroll);
+  }, []);
+
+  // Little tab-title wink when the visitor switches away.
+  useEffect(() => {
+    const original = document.title;
+    const onVis = () => { document.title = document.hidden ? "👀 the code is still raining…" : original; };
+    document.addEventListener("visibilitychange", onVis);
+    return () => document.removeEventListener("visibilitychange", onVis);
+  }, []);
   const toggleRain = useCallback(() => {
     if (prefersReducedMotion()) {
       showToast("Code rain is off because your system prefers reduced motion.");
@@ -155,6 +200,7 @@ export default function App() {
       { label: "Toggle dark / light theme", group: "Action", keywords: "mode", action: toggleTheme },
       { label: "Toggle code rain", group: "Easter egg", keywords: "matrix rain konami", action: toggleRain },
       { label: "Copy email address", group: "Action", keywords: "contact mail", action: copyEmail },
+      { label: "Print / save page as PDF", group: "Action", keywords: "resume cv download", action: () => setTimeout(() => window.print(), 50) },
       { label: "Open GitHub", group: "Link", action: () => window.open(GITHUB, "_blank", "noopener") },
       { label: "Open LinkedIn", group: "Link", action: () => window.open(LINKEDIN, "_blank", "noopener") },
     ],
@@ -172,6 +218,10 @@ export default function App() {
             const id = e.target.id;
             setActive(id);
             document.documentElement.style.setProperty("--accent", accentFor[id] || "var(--accent-1)");
+            const hash = id === "home" ? "" : `#${id}`;
+            if (window.location.hash !== hash) {
+              history.replaceState(null, "", `${window.location.pathname}${window.location.search}${hash}`);
+            }
           }
         });
       },
@@ -220,7 +270,7 @@ export default function App() {
   // Apply theme attr and persist
   useEffect(() => {
     document.documentElement.setAttribute("data-theme", theme);
-    try { localStorage.setItem("theme", theme); } catch { /* storage blocked */ }
+    document.querySelector('meta[name="theme-color"]')?.setAttribute("content", theme === "dark" ? "#121418" : "#f6f7f9");
   }, [theme]);
 
   const NavLink = ({ id, children }) => (
@@ -237,6 +287,7 @@ export default function App() {
 
   return (
     <div className="min-h-screen">
+      <a href="#about" className="skip-link">Skip to content</a>
       <div aria-hidden className="gradient-bg" />
       <div aria-hidden className="grain-bg" />
       {showRain && <CodeRain intense={rainMode} />}
@@ -298,6 +349,13 @@ export default function App() {
                     {s.label}
                   </a>
                 ))}
+                <button
+                  type="button"
+                  onClick={() => { setOpen(false); setPaletteOpen(true); }}
+                  className="py-2 text-left font-mono text-[color:var(--muted)] hover:text-[var(--accent)]"
+                >
+                  &gt; commands…
+                </button>
               </div>
             </div>
           )}
@@ -310,11 +368,11 @@ export default function App() {
           <Container>
             <div className="text-center" data-reveal>
               <a
-                href="#research"
+                href="#contact"
                 className="inline-flex items-center gap-2 rounded-full border border-[var(--border)] bg-[var(--surface)]/70 px-3 py-1 text-xs text-[color:var(--muted)] hover:text-[var(--fg)]"
               >
                 <span className="pulse-dot" aria-hidden />
-                <span className="font-mono">now:</span> {NOW}
+                {BADGE}
               </a>
               <h1 className="mt-6 text-5xl md:text-6xl font-bold tracking-tight">
                 <span className="name-shine">Surya Murali</span>
@@ -323,15 +381,15 @@ export default function App() {
                 <RotatingRoles roles={ROLES} />
               </p>
               <p className="mt-4 max-w-2xl mx-auto text-[color:var(--muted)] leading-7">
-                Computer Science student at SFU (Statistics minor, 2027). I build AI tools that hold up in real operations,
-                and research where AI systems quietly fail.
+                Computer Science at SFU, Statistics minor, class of 2027. I’ve built AI tools that held up in live
+                operations and researched where AI systems quietly fail.
               </p>
-              <div className="mt-8 flex flex-wrap gap-3 justify-center">
+              <div className="mt-8 flex flex-wrap gap-3 justify-center no-print">
                 <Button href="#experience">See my work</Button>
                 <Button variant="outline" href={`mailto:${EMAIL}`}>Contact me</Button>
                 <Button variant="outline" href={GITHUB} target="_blank" rel="noreferrer">GitHub</Button>
               </div>
-              <p className="mt-4 text-xs font-mono text-[color:var(--muted)] hidden md:block">
+              <p className="mt-4 text-xs font-mono text-[color:var(--muted)] hidden md:block no-print">
                 tip: press <kbd className="kbd">/</kbd> to navigate like a terminal
               </p>
             </div>
@@ -365,10 +423,10 @@ export default function App() {
               />
             </div>
             <div className="md:col-span-2 space-y-4 text-[var(--fg)] leading-7" data-reveal style={{ "--d": "120ms" }}>
-              <p>Hi, I’m Surya 👋🏽 I was born and raised in New Delhi, India, in a Tamil family, and now I live in Vancouver, Canada while studying Computer Science (with a Statistics minor) at SFU.</p>
-              <p>On the tech side, I just wrapped a co-op as an AI Implementation Intern at Access World (Glencore), turning messy shipment spreadsheets into validated Oracle uploads. I’m also leading PhishForge, a capstone research project that stress-tests AI phishing detectors to find their blind spots.</p>
-              <p>Outside of code I’m in student government, as an SFSS Associate VP and an SFU Senator, because I like fixing things for people, not just for computers.</p>
-              <p>I love playing fingerstyle guitar, working out at the gym, and annoying my friends with weird jokes. Music is a big part of me: alternative rock, indie, and whatever random bands I find. Lately I’ve been learning Japanese, and one day I want to travel Japan and speak it fluently.</p>
+              <p>Hi, I’m Surya 👋🏽 I was born and raised in New Delhi, India, in a Tamil family, and moved to Vancouver, Canada to study Computer Science (with a Statistics minor) at SFU.</p>
+              <p>On the tech side, I worked as an AI Implementation Intern at Access World (Glencore), where I turned messy shipment spreadsheets into validated Oracle uploads. I also led PhishForge, a capstone research project that stress-tested AI phishing detectors to find their blind spots.</p>
+              <p>Outside of code I served in student government, as an SFSS Associate VP and an SFU Senator, because I like fixing things for people, not just for computers.</p>
+              <p>I love playing fingerstyle guitar, working out at the gym, and annoying my friends with weird jokes. Music is a big part of me: alternative rock, indie, and whatever random bands I find. I picked up Japanese along the way, and one day I want to travel Japan and speak it fluently.</p>
               <p>At the end of the day, I just enjoy building things, playing music, and finding ways to laugh a little louder.</p>
             </div>
           </div>
@@ -387,7 +445,7 @@ export default function App() {
                       <h3 className="font-semibold text-lg">
                         {w.role} <span className="text-[color:var(--muted)] font-normal">· {w.team}</span>
                       </h3>
-                      <span className="text-sm font-mono text-[color:var(--muted)]">{w.time}</span>
+                      <span className="text-sm font-mono text-[color:var(--muted)]">{formatRange(w.start, w.end)}</span>
                     </div>
                     <p className="mt-1 text-sm">
                       <span className="text-[var(--accent)] font-medium">{w.org}</span>
@@ -414,7 +472,7 @@ export default function App() {
                 <article className={`${CARD} p-5 md:p-6`}>
                   <div className="flex flex-wrap items-baseline justify-between gap-2">
                     <h3 className="font-semibold text-lg">{RESEARCH.title}</h3>
-                    <span className="text-sm font-mono text-[color:var(--muted)]">{RESEARCH.time}</span>
+                    <span className="text-sm font-mono text-[color:var(--muted)]">{formatRange(RESEARCH.start, RESEARCH.end)}</span>
                   </div>
                   <p className="mt-1 text-sm text-[color:var(--muted)]">{RESEARCH.context}</p>
                   <div className="mt-4 grid md:grid-cols-5 gap-6">
@@ -478,7 +536,7 @@ export default function App() {
           <div className="grid md:grid-cols-3 gap-4">
             {LEADERSHIP.map((e, i) => (
               <article key={e.role} className={`${CARD} p-5`} data-reveal style={{ "--d": `${i * 100}ms` }}>
-                <p className="text-xs font-mono text-[color:var(--muted)]">{e.time}</p>
+                <p className="text-xs font-mono text-[color:var(--muted)]">{formatRange(e.start, e.end)}</p>
                 <h3 className="mt-2 font-semibold leading-snug">{e.role}</h3>
                 <p className="text-sm text-[var(--accent)]">{e.org}</p>
                 <ul className="mt-3 space-y-2 text-sm text-[color:var(--muted)] leading-6">
@@ -514,7 +572,11 @@ export default function App() {
             <p className="mt-1 text-sm text-[color:var(--muted)]">
               Or reach me at my SFU address: <a className="underline hover:text-[var(--accent)]" href={`mailto:${SFU_EMAIL}`}>{SFU_EMAIL}</a>
             </p>
-            <div className="mt-6 flex flex-wrap gap-3">
+            <p className="mt-3 text-xs font-mono text-[color:var(--muted)]">
+              <span className="pulse-dot inline-block mr-2 align-middle" aria-hidden />
+              Vancouver local time: <span className="text-[var(--fg)]">{vancouverTime}</span>
+            </p>
+            <div className="mt-6 flex flex-wrap gap-3 no-print">
               <Button href={`mailto:${EMAIL}`}>Email me</Button>
               <Button variant="outline" onClick={copyEmail}>Copy email</Button>
               <Button variant="outline" href={LINKEDIN} target="_blank" rel="noreferrer">LinkedIn</Button>
@@ -528,6 +590,16 @@ export default function App() {
         <p>© {new Date().getFullYear()} Surya Murali. Built with React & Tailwind v4.</p>
         <p className="mt-2 font-mono text-xs opacity-70">psst… ↑ ↑ ↓ ↓ ← → ← → B A</p>
       </footer>
+
+      <button
+        type="button"
+        aria-label="Back to top"
+        onClick={() => window.scrollTo({ top: 0, behavior: prefersReducedMotion() ? "auto" : "smooth" })}
+        className={`to-top ${showTop ? "to-top--show" : ""}`}
+        tabIndex={showTop ? 0 : -1}
+      >
+        <svg viewBox="0 0 24 24" className="h-4 w-4" fill="none" stroke="currentColor" strokeWidth="2"><path d="M12 19V5M5 12l7-7 7 7" /></svg>
+      </button>
 
       <CommandPalette open={paletteOpen} onClose={() => setPaletteOpen(false)} commands={commands} />
       <Toast message={toast} />
